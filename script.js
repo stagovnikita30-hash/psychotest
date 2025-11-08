@@ -27,7 +27,7 @@ questions.forEach((q, index) => {
   container.appendChild(block);
 });
 
-document.getElementById("submit-btn").addEventListener("click", () => {
+document.getElementById("submit-btn").addEventListener("click", async () => {
   const answers = [];
 
   questions.forEach((_, index) => {
@@ -37,10 +37,11 @@ document.getElementById("submit-btn").addEventListener("click", () => {
       if (el.type === "radio" && el.checked) answer = el.value;
       if (el.type === "text" && el.value.trim() !== "") answer = el.value.trim();
     });
-    answers.push(`${index + 1}. ${answer}`);
+    answers.push(answer);
   });
 
-  const resultText = answers.join("\n");
+  // Показываем ответы на странице
+  const resultText = answers.map((a, i) => `${i + 1}. ${a}`).join("\n");
   document.getElementById("results").textContent = resultText;
 
   // Сохраняем в файл
@@ -49,4 +50,23 @@ document.getElementById("submit-btn").addEventListener("click", () => {
   link.href = URL.createObjectURL(blob);
   link.download = "answers.txt";
   link.click();
+
+  // Отправляем ответы на API для анализа
+  try {
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers })
+    });
+
+    const data = await response.json();
+
+    // Показываем анализ
+    const analysisBlock = document.getElementById("analysis");
+    if (analysisBlock) {
+      analysisBlock.textContent = data.result || "Ошибка анализа";
+    }
+  } catch (error) {
+    console.error("Ошибка связи с сервером:", error);
+  }
 });
